@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#120400">
+<title>ItihaskarStudio — Standalone Automation APK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --ground:#120400; --ink:#fff; --soft:rgba(255,255,255,.78); --faint:rgba(255,255,255,.65);
+  --flame:#ff3d00; --lit:#ff8a1f; --amber:#ffb36b; --dark:#180600;
+  --line:rgba(255,255,255,.15); --glass:rgba(56,20,6,.48); --glass2:rgba(24,8,2,.82);
+  --display:'Inter Tight',system-ui,sans-serif; --body:'Inter',system-ui,sans-serif; --serif:'Instrument Serif',Georgia,serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+*{margin:0}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100svh;overflow-x:hidden}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+[hidden]{display:none!important}
+em{font-family:var(--serif);font-weight:400;color:var(--lit)}
+
+/* ---------- 1. LANDING VIEW (First-Time Slide to Open — NO Top Pages Bar Here!) ---------- */
+.view{min-height:100svh;display:flex;flex-direction:column}
+#landingView{position:relative;overflow:hidden;justify-content:space-between;
+  background:radial-gradient(120% 60% at 50% 112%,#ff3d00 0%,#ff8a1f 9%,rgba(255,61,0,.38) 28%,rgba(18,4,0,0) 62%),var(--ground)}
+#landingView::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-30%;height:75%;pointer-events:none;
+  background:radial-gradient(60% 70% at 50% 100%,rgba(255,138,31,.55),rgba(255,61,0,0) 70%);animation:glow 7s ease-in-out infinite alternate}
+#rocks{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.mark{position:absolute;left:24px;bottom:-36px;font-family:var(--display);font-weight:700;font-size:clamp(80px,18vw,240px);letter-spacing:-.05em;line-height:1;color:rgba(255,255,255,.06);pointer-events:none}
+.nav{position:relative;display:flex;align-items:center;justify-content:space-between;padding:22px clamp(18px,4vw,44px)}
+.brand{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.025em}
+.kicker{font-size:11.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.hero{position:relative;display:flex;flex-direction:column;justify-content:center;gap:26px;width:100%;max-width:920px;margin:auto;padding:36px clamp(18px,4vw,44px)}
+.tag{align-self:flex-start;padding:7px 14px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(40,13,3,.55)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(36px,6vw,72px);line-height:1.04;letter-spacing:-.035em}
+.hero-sub{font-size:15px;color:var(--soft);max-width:560px;line-height:1.6}
+.cta{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:6px}
+.foot{position:relative;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:22px clamp(18px,4vw,44px) 26px;font-size:13px;color:rgba(255,255,255,.82)}
+.dot{width:8px;height:8px;border-radius:50%;background:#7ee787;display:inline-block;margin-right:8px}
+
+/* ---------- SLIDE TO OPEN WIDGET ---------- */
+.slide{position:relative;width:320px;max-width:100%;height:56px;touch-action:none;cursor:grab;border-radius:999px;overflow:hidden;user-select:none;
+  background:linear-gradient(96deg,var(--flame),var(--lit));box-shadow:0 14px 40px rgba(255,61,0,.42)}
+.sl-label,.sl-done{position:absolute;inset:0 0 0 54px;display:flex;align-items:center;justify-content:center;font-size:15.5px;font-weight:700;color:var(--dark);white-space:nowrap;pointer-events:none}
+.sl-done{opacity:0}
+.slide.is-done .sl-done{opacity:1}
+.slide.is-done .sl-label{opacity:0!important}
+.sl-knob{position:absolute;left:7px;top:7px;width:42px;height:42px;border-radius:50%;background:var(--dark);color:var(--lit);display:grid;place-items:center;cursor:grab;touch-action:none;transition:transform .3s cubic-bezier(.16,1,.3,1)}
+.sl-knob.drag{transition:none;cursor:grabbing}
+.sl-knob svg{width:19px;height:19px}
+
+@keyframes glow{from{opacity:.35;transform:scale(1)}to{opacity:.95;transform:scale(1.08)}}
+
+/* ---------- 2. WORKSPACE VIEW (Shown ONLY After Slide to Open + Folder Selection!) ---------- */
+#workspaceView{background:radial-gradient(90% 40% at 50% -8%,rgba(255,61,0,.22) 0%,rgba(18,4,0,0) 70%),#090d14;min-height:100svh;display:flex;flex-direction:column}
+
+/* Top 3-Pages Chromium Bar (Home | Chatgpt | Flow ai) — Shown ONLY when Terminal Screen opens! */
+.top-pages-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0b0f17;border-bottom:1px solid #1e293b;position:sticky;top:0;z-index:100}
+.page-tab-btn{flex:1;padding:9px 12px;border-radius:10px;background:#161b26;border:1px solid #334155;color:#e2e8f0;font-weight:700;font-size:13.5px;text-align:center;transition:all .15s}
+.page-tab-btn.active{background:linear-gradient(96deg,var(--flame),var(--lit));border-color:var(--lit);color:#180600;box-shadow:0 4px 16px rgba(255,61,0,.35)}
+
+/* Terminal Container */
+.term-wrap{flex:1;display:flex;flex-direction:column;padding:12px}
+.term-card{flex:1;display:flex;flex-direction:column;max-width:1060px;width:100%;margin:0 auto;border:1px solid rgba(255,138,31,.32);border-radius:18px;background:#0d1117;box-shadow:0 20px 50px rgba(0,0,0,.75);overflow:hidden}
+.term-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:#161b22;border-bottom:1px solid #30363d}
+.term-header-left{display:flex;align-items:center;gap:8px}
+.mac-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.term-title{font-family:var(--mono);font-size:12.5px;font-weight:700;color:#ffb36b;letter-spacing:.04em;margin-left:6px}
+.folder-pill{font-family:var(--mono);font-size:11.5px;color:#7ee787;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);padding:4px 10px;border-radius:999px;cursor:pointer}
+
+/* VS Code Terminal Log Stream */
+.term-screen{flex:1;padding:18px 16px;overflow-y:auto;font-family:var(--mono);font-size:14px;line-height:1.75;color:#e6edf3;background:#090d14;min-height:300px;max-height:calc(100svh - 245px)}
+.t-line{margin-bottom:6px;word-break:break-word}
+.t-line.menu-opt{color:#ffd166;font-weight:700;font-size:15px;padding:5px 12px;border-radius:8px;background:rgba(255,138,31,.08);border-left:3px solid #ff8a1f;margin:6px 0;cursor:pointer;transition:background .15s}
+.t-line.menu-opt:hover{background:rgba(255,138,31,.2)}
+.t-line.cmd-echo{color:#38bdf8;font-weight:700;margin-top:10px}
+.t-line.ok{color:#4ade80;font-weight:600}
+.t-line.warn{color:#fb923c;font-weight:600}
+.t-line.err{color:#f87171;font-weight:600}
+.t-line.info{color:#c9d1d9}
+.t-line.live-step{color:#a7f3d0;background:rgba(16,185,129,.08);border-left:3px solid #10b981;padding:6px 10px;border-radius:6px;margin:6px 0;font-weight:600}
+.t-divider{border-top:1px dashed rgba(255,255,255,.14);margin:12px 0}
+
+/* Dynamic Action Button Bar (Next / Start Automation) */
+.action-bar{display:flex;flex-wrap:wrap;gap:10px;padding:10px 16px;background:#111827;border-top:1px solid #21262d}
+.act-btn{padding:10px 20px;border-radius:999px;font-weight:700;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.act-btn--next{background:linear-gradient(90deg,#2563eb,#3b82f6);color:#fff}
+.act-btn--start{background:linear-gradient(90deg,#ff3d00,#ff8a1f);color:#180600;font-size:14.5px;padding:11px 24px}
+.act-btn--stop{background:rgba(220,38,38,.25);border:1px solid #ef4444;color:#fecaca}
+
+/* Bottom Command Input Box */
+.input-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#161b22;border-top:1px solid #30363d}
+.prompt-sign{font-family:var(--mono);font-weight:700;color:#ff8a1f;font-size:16px}
+.cmd-input{flex:1;min-height:46px;padding:0 16px;border-radius:12px;border:1px solid #30363d;background:#090d14;color:#fff;font-family:var(--mono);font-size:15px;outline:none}
+.cmd-input:focus{border-color:#ff8a1f}
+.send-btn{min-height:46px;padding:0 22px;border-radius:12px;background:linear-gradient(96deg,var(--flame),var(--lit));color:#180600;font-weight:700;font-size:14.5px}
+
+/* Web Preview Simulated Tab Card (Only used when previewing in Canvas outside Android APK) */
+.sim-browser-view{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;gap:16px;background:#0b0f17}
+.sim-browser-card{max-width:540px;width:100%;padding:28px;border-radius:20px;background:#111827;border:1px solid #334155;display:flex;flex-direction:column;gap:14px;align-items:center}
+</style>
+</head>
+<body>
+
+<!-- ==================== 1. FIRST-TIME LANDING VIEW (NO TOP TABS HERE!) ==================== -->
+<div class="view" id="landingView">
+  <div class="mark" aria-hidden="true">ITIHASKAR</div>
+  <canvas id="rocks" aria-hidden="true"></canvas>
+
+  <header class="nav">
+    <span class="brand">ItihaskarStudio</span>
+    <span class="kicker">Android Chromium Automation APK</span>
+  </header>
+
+  <section class="hero">
+    <p class="kicker tag">AI Documentary Automation Platform</p>
+    <h1>We Build AI Systems That Save Time And <em>Scale</em></h1>
+    <p class="hero-sub">
+      Slide karke apna local phone folder choose karein. Folder choose hote hi Terminal Screen aur upar 3 pages (<b>Home, Chatgpt, Flow ai</b>) khul jayenge.
+    </p>
+    <div class="cta">
+      <div class="slide" id="slideToOpenBtn" data-label="Slide to Open" data-done="Opening Folder Setup…"></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span><i class="dot"></i>100% Local Android Execution • Built-in Chromium</span>
+    <span>Itihaskar Samay • Standalone Edition</span>
+  </footer>
+</div>
+
+<!-- ==================== 2. WORKSPACE + TERMINAL VIEW (3 PAGES VISIBLE AT TOP!) ==================== -->
+<div id="workspaceView" hidden>
+  <!-- Top 3 Pages Bar: Home | Chatgpt | Flow ai (Visible as soon as Terminal Screen opens!) -->
+  <nav class="top-pages-bar" id="webTopPagesBar" aria-label="Browser Pages">
+    <button type="button" class="page-tab-btn active" id="webTabHome" data-page="home">Home</button>
+    <button type="button" class="page-tab-btn" id="webTabChatgpt" data-page="chatgpt">Chatgpt</button>
+    <button type="button" class="page-tab-btn" id="webTabFlow" data-page="flow">Flow ai</button>
+  </nav>
+
+  <!-- Sub-page 1: HOME TERMINAL SCREEN -->
+  <div class="term-wrap" id="subPageHome">
+    <div class="term-card">
+      <div class="term-header">
+        <div class="term-header-left">
+          <i class="mac-dot" style="background:#ef4444"></i>
+          <i class="mac-dot" style="background:#f59e0b"></i>
+          <i class="mac-dot" style="background:#10b981"></i>
+          <span class="term-title">ITIHASKAR HOME TERMINAL</span>
+        </div>
+        <button type="button" class="folder-pill" id="folderBadgeBtn" title="Click to change folder">📁 Folder: Loading...</button>
+      </div>
+
+      <div class="term-screen" id="termScreen"></div>
+
+      <!-- Dynamic Contextual Buttons (Next / Start Automation / Stop) -->
+      <div class="action-bar" id="actionBar" hidden></div>
+
+      <!-- Input Box for 1, 2, 3, 4 & Scene Numbers -->
+      <form class="input-bar" id="cmdForm" autocomplete="off">
+        <span class="prompt-sign">&gt;&gt;</span>
+        <input type="text" id="cmdInput" class="cmd-input" placeholder="Yahan option number (1, 2...) likhein..." inputmode="text">
+        <button type="submit" class="send-btn" id="cmdSendBtn">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sub-page 2 & 3 Preview (Used only when testing in Canvas browser; in Android APK, native Chromium WebView opens!) -->
+  <div class="sim-browser-view" id="subPageExternalPreview" hidden>
+    <div class="sim-browser-card">
+      <span class="kicker" id="simBrowserKicker">BUILT-IN CHROMIUM TAB</span>
+      <h2 id="simBrowserTitle" style="font-family:var(--display);font-size:26px">ChatGPT Page</h2>
+      <p id="simBrowserDesc" style="color:var(--soft);font-size:14px;line-height:1.6">
+        Android APK ke andar yahan asali Chromium browser me <b>https://chatgpt.com/</b> khula rehta hai. Account login karne ke baad upar <b>Home</b> tab par click karke wapas jayein aur <b>Next</b> dabayein.
+      </p>
+      <button type="button" class="act-btn act-btn--next" id="simBackHomeBtn">⬅️ Wapas Home Page Par Jayein</button>
+    </div>
+  </div>
+
+  <input type="file" id="hiddenPdfInput" accept=".pdf,application/pdf" hidden>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  const bridge = window.AndroidBotBridge || null;
+  const landingView = document.getElementById('landingView');
+  const workspaceView = document.getElementById('workspaceView');
+  const webTopPagesBar = document.getElementById('webTopPagesBar');
+  const subPageHome = document.getElementById('subPageHome');
+  const subPageExternalPreview = document.getElementById('subPageExternalPreview');
+  const termScreen = document.getElementById('termScreen');
+  const actionBar = document.getElementById('actionBar');
+  const cmdForm = document.getElementById('cmdForm');
+  const cmdInput = document.getElementById('cmdInput');
+  const folderBadgeBtn = document.getElementById('folderBadgeBtn');
+  const hiddenPdfInput = document.getElementById('hiddenPdfInput');
+
+  // If running inside the Android APK, native topBarContainer provides the 3 tabs across all 3 WebViews,
+  // so we hide the duplicate HTML top bar inside Android and notify native to show its 3-tab bar!
+  if (bridge && typeof bridge.notifyTerminalScreenOpened === 'function') {
+    webTopPagesBar.hidden = true;
+  }
+
+  function switchPageTab(tabName) {
+    if (bridge && typeof bridge.switchTabFromWeb === 'function') {
+      bridge.switchTabFromWeb(tabName);
+      return;
+    }
+    // Canvas / Browser preview tab switching
+    document.querySelectorAll('.page-tab-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.page === tabName);
+    });
+    if (tabName === 'home') {
+      subPageHome.hidden = false;
+      subPageExternalPreview.hidden = true;
+    } else {
+      subPageHome.hidden = true;
+      subPageExternalPreview.hidden = false;
+      const isFlow = tabName === 'flow';
+      document.getElementById('simBrowserTitle').textContent = isFlow ? 'Flow AI (labs.google/fx/tools/flow)' : 'ChatGPT (chatgpt.com)';
+      document.getElementById('simBrowserDesc').innerHTML = isFlow
+        ? 'Android APK me is tab me asali Chromium browser ke andar <b>Flow AI</b> khula rehta hai. Jab tak Home page se command nahi jaati tab tak yahan kuch automatically nahi chalta.'
+        : 'Android APK me is tab me asali Chromium browser ke andar <b>ChatGPT</b> khula rehta hai. Yahan apna account login karein, phir upar <b>Home</b> tab par click karke <b>Next</b> dabayein.';
+    }
+  }
+
+  document.querySelectorAll('.page-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => switchPageTab(btn.dataset.page));
+  });
+  document.getElementById('simBackHomeBtn').addEventListener('click', () => switchPageTab('home'));
+
+  // ====================================================================
+  // STATE MACHINE DEFINITIONS (EXACT WORKFLOW FROM DOCX)
+  // ====================================================================
+  const STATE = {
+    SELECT_BOT: 'SELECT_BOT',               // 1: CHATGPT (1), 2: FLOW AI (2)
+    MAIN_MENU: 'MAIN_MENU',                 // 1: Account set up, 2: Pdf choose, 3: Limits reset, 4: Exit
+    ASK_ACC_COUNT: 'ASK_ACC_COUNT',         // Kitne karne h account setup
+    ACC_SETUP_WAIT_NEXT: 'ACC_SETUP_WAIT_NEXT', // Waiting for user to login & click Next on Home
+    SELECT_PDF: 'SELECT_PDF',               // 1..K existing PDFs, K+1: New pdf upload karni h
+    ASK_START_SCENE: 'ASK_START_SCENE',     // Kaha se suru karne h (Default: minScene)
+    ASK_END_SCENE: 'ASK_END_SCENE',         // Kaha tak ke scenes banane h (Default: maxScene)
+    READY_START_AUTO: 'READY_START_AUTO',   // Waiting for Start Automation button
+    RUNNING_AUTO: 'RUNNING_AUTO'            // Automation running in ChatGPT / Flow AI tab
+  };
+
+  let appState = {
+    mode: STATE.SELECT_BOT,
+    selectedBot: 1, // 1 = ChatGPT, 2 = Flow AI
+    folderPath: '',
+    setupCurrentAcc: 1,
+    setupTargetTotal: 1,
+    folderPdfs: [],
+    chosenPdfName: '',
+    parsedScenes: [],
+    minScene: 1,
+    maxScene: 1,
+    startScene: 1,
+    endScene: 1,
+    filteredScenes: []
+  };
+
+  function botName() {
+    return appState.selectedBot === 2 ? 'FLOW AI' : 'CHATGPT';
+  }
+
+  // Fallback account counter for Canvas preview
+  function getSavedAccountsCount(botType) {
+    if (bridge && typeof bridge.getSavedAccountCount === 'function') {
+      return Number(bridge.getSavedAccountCount(botType) || 0);
+    }
+    return Number(localStorage.getItem('itk_sim_acc_count_' + botType) || 0);
+  }
+
+  function setSimSavedAccountsCount(botType, count) {
+    localStorage.setItem('itk_sim_acc_count_' + botType, String(count));
+  }
+
+  // ====================================================================
+  // TERMINAL PRINTING HELPERS
+  // ====================================================================
+  function addLine(text, cls, onClickVal) {
+    const div = document.createElement('div');
+    div.className = 't-line ' + (cls || 'info');
+    div.textContent = text;
+    if (onClickVal !== undefined && onClickVal !== null) {
+      div.addEventListener('click', () => {
+        handleUserInput(String(onClickVal));
+      });
+    }
+    termScreen.appendChild(div);
+    termScreen.scrollTop = termScreen.scrollHeight;
+  }
+
+  function addDivider() {
+    const d = document.createElement('div');
+    d.className = 't-divider';
+    termScreen.appendChild(d);
+    termScreen.scrollTop = termScreen.scrollHeight;
+  }
+
+  function clearActionButtons() {
+    actionBar.innerHTML = '';
+    actionBar.hidden = true;
+  }
+
+  function showActionButtons(buttons) {
+    actionBar.innerHTML = '';
+    if (!buttons || buttons.length === 0) {
+      actionBar.hidden = true;
+      return;
+    }
+    buttons.forEach((b) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'act-btn ' + (b.cls || 'act-btn--next');
+      btn.textContent = b.label;
+      btn.addEventListener('click', b.onClick);
+      actionBar.appendChild(btn);
+    });
+    actionBar.hidden = false;
+    termScreen.scrollTop = termScreen.scrollHeight;
+  }
+
+  function refreshFolderBadge() {
+    if (bridge && typeof bridge.getSelectedFolderDisplay === 'function') {
+      appState.folderPath = bridge.getSelectedFolderDisplay();
+    } else {
+      appState.folderPath = localStorage.getItem('itk_standalone_folder') || '/storage/emulated/0/Itihaskar_Bot';
+    }
+    folderBadgeBtn.textContent = '📁 ' + appState.folderPath;
+  }
+
+  folderBadgeBtn.addEventListener('click', () => {
+    if (bridge && typeof bridge.openFolderPickerFromHome === 'function') {
+      bridge.openFolderPickerFromHome();
+    }
+  });
+
+  // ====================================================================
+  // STEP 1: SHOW INITIAL BOT SELECTION (CHATGPT (1) / FLOW AI (2))
+  // ====================================================================
+  function showBotSelectionPrompt(clearScreen) {
+    if (clearScreen) {
+      termScreen.innerHTML = '';
+    } else {
+      addDivider();
+    }
+    clearActionButtons();
+    appState.mode = STATE.SELECT_BOT;
+    addLine('FIRST LINE - CHATGPT (1)', 'menu-opt', '1');
+    addLine('SECOND LINE - FLOW AI (2)', 'menu-opt', '2');
+    cmdInput.placeholder = '1 ya 2 likh kar apna option choose karein...';
+    cmdInput.value = '';
+  }
+
+  // ====================================================================
+  // STEP 2: SHOW 4-LINE MAIN MENU (1, 2, 3, 4)
+  // ====================================================================
+  function showFourLineMainMenu() {
+    addDivider();
+    clearActionButtons();
+    appState.mode = STATE.MAIN_MENU;
+    addLine('Account set up kare (1)', 'menu-opt', '1');
+    addLine('Pdf choose kare (2)', 'menu-opt', '2');
+    addLine('Sabhi accounts ki limits reset kare (3)', 'menu-opt', '3');
+    addLine('Exit (4)', 'menu-opt', '4');
+    cmdInput.placeholder = '1, 2, 3 ya 4 likhein...';
+    cmdInput.value = '';
+  }
+
+  // ====================================================================
+  // STEP 3: ACCOUNT SETUP FLOW (WITH ACCOUNT FOLDER CHECK & NEXT BUTTON)
+  // ====================================================================
+  function startAccountSetupOption() {
+    addDivider();
+    clearActionButtons();
+    appState.mode = STATE.ASK_ACC_COUNT;
+    const existing = getSavedAccountsCount(appState.selectedBot);
+    addLine('Kitne karne h account setup? (Account folder me abhi ' + existing + ' account save h):', 'info');
+    cmdInput.placeholder = 'Kitne account setup karne h? (e.g. 3)';
+    cmdInput.value = '';
+    cmdInput.focus();
+  }
+
+  function processAccountCountInput(numWanted) {
+    const existing = getSavedAccountsCount(appState.selectedBot);
+
+    if (existing > 0 && numWanted <= existing) {
+      addLine(
+        'Account setup ho chuke h (' + existing + ' account pehle se Account folder me bne h). Aap agla option choose kar sakte h.',
+        'ok'
+      );
+      showFourLineMainMenu();
+      return;
+    }
+
+    if (existing > 0 && numWanted > existing) {
+      addLine(
+        existing + ' account setup ho chuke h aur Account ' + (existing + 1) + ' se ' + numWanted + ' setup kare:',
+        'warn'
+      );
+      appState.setupCurrentAcc = existing + 1;
+      appState.setupTargetTotal = numWanted;
+    } else {
+      appState.setupCurrentAcc = 1;
+      appState.setupTargetTotal = numWanted;
+    }
+
+    launchSingleAccountLoginStep(appState.setupCurrentAcc, appState.setupTargetTotal);
+  }
+
+  function launchSingleAccountLoginStep(accNo, totalTarget) {
+    appState.mode = STATE.ACC_SETUP_WAIT_NEXT;
+    addDivider();
+    addLine(
+      'Account ' + accNo + ' (of ' + totalTarget + '): 2-3 second me ' + botName() + ' khul rha h...',
+      'warn'
+    );
+    addLine(
+      'Account setup karne ke baad upar Home page par aakar Next dabayein:',
+      'live-step'
+    );
+
+    showActionButtons([
+      {
+        label: 'Next ➡️ (Account ' + accNo + ' Save Karein)',
+        cls: 'act-btn--next',
+        onClick: () => completeCurrentAccountSetupStep()
+      }
+    ]);
+
+    cmdInput.placeholder = 'Login karne ke baad Next dabayein...';
+
+    setTimeout(() => {
+      if (bridge && typeof bridge.prepareAccountSetupInBrowser === 'function') {
+        bridge.prepareAccountSetupInBrowser(appState.selectedBot, accNo);
+      } else {
+        switchPageTab(appState.selectedBot === 2 ? 'flow' : 'chatgpt');
+      }
+    }, 2400);
+  }
+
+  function completeCurrentAccountSetupStep() {
+    const accNo = appState.setupCurrentAcc;
+    const total = appState.setupTargetTotal;
+
+    if (bridge && typeof bridge.saveCurrentAccountToFolder === 'function') {
+      const savedPath = bridge.saveCurrentAccountToFolder(appState.selectedBot, accNo);
+      addLine('✅ Account_' + accNo + ' setup ho gya aur uski details Account folder me save ho gyi! (' + savedPath + ')', 'ok');
+    } else {
+      setSimSavedAccountsCount(appState.selectedBot, accNo);
+      addLine('✅ Account_' + accNo + ' setup ho gya aur uski details Account folder me save ho gyi!', 'ok');
+    }
+
+    if (accNo < total) {
+      appState.setupCurrentAcc = accNo + 1;
+      launchSingleAccountLoginStep(appState.setupCurrentAcc, total);
+    } else {
+      clearActionButtons();
+      addLine('🎉 Saare ' + total + ' accounts ka setup poora ho gya!', 'ok');
+      showFourLineMainMenu();
+    }
+  }
+
+  // ====================================================================
+  // STEP 4: PDF CHOOSE KARE WORKFLOW (EXISTING FOLDER PDFS + NEW UPLOAD)
+  // ====================================================================
+  function startPdfChooseOption() {
+    addDivider();
+    clearActionButtons();
+    appState.mode = STATE.SELECT_PDF;
+
+    let pdfs = [];
+    if (bridge && typeof bridge.listFolderPdfsJson === 'function') {
+      try {
+        pdfs = JSON.parse(bridge.listFolderPdfsJson() || '[]');
+      } catch (e) {
+        pdfs = [];
+      }
+    }
+    appState.folderPdfs = Array.isArray(pdfs) ? pdfs : [];
+
+    if (appState.folderPdfs.length > 0) {
+      appState.folderPdfs.forEach((pName, idx) => {
+        const optNo = idx + 1;
+        addLine(pName + ' (' + optNo + ')', 'menu-opt', String(optNo));
+      });
+    }
+
+    const uploadOptNo = appState.folderPdfs.length + 1;
+    addLine('New pdf upload karni h (' + uploadOptNo + ')', 'menu-opt', String(uploadOptNo));
+    cmdInput.placeholder = '1 se ' + uploadOptNo + ' tak option number likhein...';
+    cmdInput.value = '';
+    cmdInput.focus();
+  }
+
+  async function processPdfSelectionInput(choiceNo) {
+    const k = appState.folderPdfs.length;
+    const uploadOpt = k + 1;
+
+    if (choiceNo >= 1 && choiceNo <= k) {
+      const chosenName = appState.folderPdfs[choiceNo - 1];
+      appState.chosenPdfName = chosenName;
+      addLine('Existing PDF chuni gyi: ' + chosenName + '. Read kiya jaa rha h...', 'ok');
+      if (bridge && typeof bridge.readFolderPdfBase64 === 'function') {
+        const b64 = bridge.readFolderPdfBase64(chosenName);
+        if (!b64 || b64.startsWith('ERROR:')) {
+          addLine('PDF read karne me error: ' + b64, 'err');
+          showFourLineMainMenu();
+          return;
+        }
+        await parsePdfBase64AndAskRange(chosenName, b64);
+      }
+      return;
+    }
+
+    if (choiceNo === uploadOpt) {
+      addLine('Local file manager khul rha h — apni PDF choose karein...', 'warn');
+      if (bridge && typeof bridge.pickNewPdfFromFileManager === 'function') {
+        bridge.pickNewPdfFromFileManager();
+      } else {
+        hiddenPdfInput.value = '';
+        hiddenPdfInput.click();
+      }
+      return;
+    }
+
+    addLine('Galat number! Kripya 1 se ' + uploadOpt + ' ke beech number likhein.', 'err');
+  }
+
+  hiddenPdfInput.addEventListener('change', async (ev) => {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = String(reader.result || '');
+      const cleanB64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+      if (bridge && typeof bridge.saveUploadedPdfToFolder === 'function') {
+        bridge.saveUploadedPdfToFolder(file.name, cleanB64);
+      }
+      if (!appState.folderPdfs.includes(file.name)) {
+        appState.folderPdfs.push(file.name);
+      }
+      addLine('✅ Nayi PDF "' + file.name + '" aapke folder me save ho gyi h! Read kiya jaa rha h...', 'ok');
+      await parsePdfBase64AndAskRange(file.name, cleanB64);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  window.onNativeNewPdfPicked = async function (fileName, base64Data) {
+    addLine('✅ Nayi PDF "' + fileName + '" aapke folder me save ho gyi h! Read kiya jaa rha h...', 'ok');
+    await parsePdfBase64AndAskRange(fileName, base64Data);
+  };
+
+  // ====================================================================
+  // EXACT PC BOT PDF READER & SCENE PARSER (`load_scenes_from_pdf`)
+  // ====================================================================
+  function extractScenesFromFullText(rawText) {
+    const cleanedLines = rawText
+      .split(/\r?\n/)
+      .filter((line) => !/\|\s*Page\s*\d+/i.test(line));
+    const cleanText = cleanedLines.join('\n');
+
+    const scenes = [];
+    const strictRegex = /SCENE\s+(\d+)\s*\n[\s\S]*?IMAGE\s+PROMPT:\s*\n([\s\S]*?)\s*\nVIDEO\s+PROMPT:\s*\n([\s\S]*?)(?=\n\s*(?:NOTE:|SCENE\s+\d+)|$)/gi;
+    let m;
+    while ((m = strictRegex.exec(cleanText)) !== null) {
+      scenes.push({
+        scene_no: parseInt(m[1], 10),
+        image_prompt: m[2].replace(/\s+/g, ' ').trim(),
+        video_prompt: m[3].replace(/\s+/g, ' ').trim()
+      });
+    }
+
+    if (scenes.length === 0) {
+      const blockRegex = /SCENE\s*(\d+)([\s\S]*?)(?=SCENE\s*\d+|$)/gi;
+      let bm;
+      while ((bm = blockRegex.exec(cleanText)) !== null) {
+        const sNo = parseInt(bm[1], 10);
+        const block = bm[2].trim();
+        let imgP = block;
+        let vidP = block;
+        const im = block.match(/IMAGE\s*PROMPT\s*[:\-]?\s*([\s\S]*?)(?=VIDEO\s*PROMPT|NOTE:|NARRATION|VOICEOVER|$)/i);
+        const vm = block.match(/VIDEO\s*PROMPT\s*[:\-]?\s*([\s\S]*?)(?=IMAGE\s*PROMPT|NOTE:|NARRATION|VOICEOVER|$)/i);
+        if (im && im[1].trim()) imgP = im[1].replace(/\s+/g, ' ').trim();
+        if (vm && vm[1].trim()) vidP = vm[1].replace(/\s+/g, ' ').trim();
+        if (imgP) {
+          scenes.push({
+            scene_no: sNo,
+            image_prompt: imgP,
+            video_prompt: vidP
+          });
+        }
+      }
+    }
+    return scenes;
+  }
+
+  async function parsePdfBase64AndAskRange(fileName, cleanB64) {
+    try {
+      const binaryStr = atob(cleanB64.replace(/\s+/g, ''));
+      const len = binaryStr.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+
+      let fullText = '';
+      if (window.pdfjsLib) {
+        const loadingTask = window.pdfjsLib.getDocument({ data: bytes });
+        const pdfDoc = await loadingTask.promise;
+        const pageTexts = [];
+        for (let p = 1; p <= pdfDoc.numPages; p++) {
+          const page = await pdfDoc.getPage(p);
+          const content = await page.getTextContent();
+          let lastY = null;
+          let pageStr = '';
+          for (const item of content.items) {
+            const y = item.transform ? Math.round(item.transform[5]) : null;
+            if (lastY !== null && y !== null && Math.abs(y - lastY) > 4) {
+              pageStr += '\n';
+            } else if (pageStr.length > 0 && !pageStr.endsWith('\n') && !pageStr.endsWith(' ')) {
+              pageStr += ' ';
+            }
+            pageStr += item.str || '';
+            lastY = y;
+          }
+          pageTexts.push(pageStr);
+        }
+        fullText = pageTexts.join('\n');
+      }
+
+      const scenes = extractScenesFromFullText(fullText);
+      if (!scenes || scenes.length === 0) {
+        addLine('Is PDF me SCENE 1 / IMAGE PROMPT format ke scenes nahi mile.', 'err');
+        showFourLineMainMenu();
+        return;
+      }
+
+      appState.chosenPdfName = fileName;
+      appState.parsedScenes = scenes;
+      appState.minScene = scenes[0].scene_no;
+      appState.maxScene = scenes[scenes.length - 1].scene_no;
+
+      addLine(
+        '✅ "' + fileName + '" read ho gyi! Total ' + scenes.length + ' scenes mile (Scene ' + appState.minScene + ' se Scene ' + appState.maxScene + ' tak).',
+        'ok'
+      );
+
+      askStartScenePrompt();
+    } catch (err) {
+      addLine('PDF parse error: ' + err.message, 'err');
+      showFourLineMainMenu();
+    }
+  }
+
+  function askStartScenePrompt() {
+    appState.mode = STATE.ASK_START_SCENE;
+    addDivider();
+    addLine(
+      'PDF me scenes kaha se suru karne h? (Default: Scene ' + appState.minScene + ' — bina kuch likhe Next kar dein ya scene number likhein):',
+      'info'
+    );
+    cmdInput.placeholder = 'Start Scene (Default ' + appState.minScene + ') — ya Next dabayein';
+    cmdInput.value = '';
+    showActionButtons([
+      {
+        label: 'Next ➡️ (Default: Scene ' + appState.minScene + ')',
+        cls: 'act-btn--next',
+        onClick: () => applyStartSceneAndAskEnd(appState.minScene)
+      }
+    ]);
+  }
+
+  function applyStartSceneAndAskEnd(startVal) {
+    appState.startScene = startVal;
+    addLine('Start Scene: Scene ' + startVal, 'ok');
+    appState.mode = STATE.ASK_END_SCENE;
+    addLine(
+      'Kaha tak ke scenes banane h? (Default: Scene ' + appState.maxScene + ' — bina kuch likhe Next kar dein ya scene number likhein):',
+      'info'
+    );
+    cmdInput.placeholder = 'End Scene (Default ' + appState.maxScene + ') — ya Next dabayein';
+    cmdInput.value = '';
+    showActionButtons([
+      {
+        label: 'Next ➡️ (Default: Scene ' + appState.maxScene + ')',
+        cls: 'act-btn--next',
+        onClick: () => applyEndSceneAndShowStartButton(appState.maxScene)
+      }
+    ]);
+  }
+
+  function applyEndSceneAndShowStartButton(endVal) {
+    appState.endScene = endVal;
+    const filtered = appState.parsedScenes.filter(
+      (s) => s.scene_no >= appState.startScene && s.scene_no <= appState.endScene
+    );
+    appState.filteredScenes = filtered.length > 0 ? filtered : appState.parsedScenes;
+
+    addLine(
+      '✅ Scene ' + appState.startScene + ' se Scene ' + appState.endScene + ' tak (Total ' + appState.filteredScenes.length + ' scenes) set ho gye.',
+      'ok'
+    );
+    appState.mode = STATE.READY_START_AUTO;
+    cmdInput.placeholder = 'Start Automation button dabayein...';
+    cmdInput.value = '';
+
+    showActionButtons([
+      {
+        label: '🚀 Start Automation',
+        cls: 'act-btn--start',
+        onClick: () => triggerStartAutomationNow()
+      }
+    ]);
+  }
+
+  function triggerStartAutomationNow() {
+    appState.mode = STATE.RUNNING_AUTO;
+    addDivider();
+    addLine('🚀 ' + botName() + ' Automation shuru ho gya h...', 'ok');
+
+    showActionButtons([
+      {
+        label: '⏹ Stop Automation',
+        cls: 'act-btn--stop',
+        onClick: () => {
+          if (bridge && typeof bridge.stopAutomationFromHome === 'function') {
+            bridge.stopAutomationFromHome();
+          }
+          addLine('⏹ Automation rok diya gya h.', 'warn');
+          showFourLineMainMenu();
+        }
+      }
+    ]);
+
+    const payload = {
+      botType: appState.selectedBot,
+      sourcePdf: appState.chosenPdfName,
+      scenes: appState.filteredScenes
+    };
+
+    if (bridge && typeof bridge.startBotAutomationWithQueue === 'function') {
+      bridge.startBotAutomationWithQueue(JSON.stringify(payload));
+    } else {
+      // Simulated preview demo when testing inside Canvas
+      const firstNo = String(appState.startScene).padStart(2, '0');
+      addLine('Chatgpt me scene' + firstNo + ' ka prompt likha jaa rha h ....', 'live-step');
+      setTimeout(() => {
+        addLine('Chatgpt me scene' + firstNo + ' ka prompt ko send kar diya gya h ab wait kar rhe h image generate karne ka aur phir download kare ....', 'live-step');
+      }, 1500);
+      setTimeout(() => {
+        addLine('scene' + firstNo + ' ki image download ho gyi h', 'ok');
+      }, 3500);
+    }
+  }
+
+  window.onBotLiveStatusLine = function (lineText, statusType) {
+    let cls = 'live-step';
+    if (statusType === 'ok' || statusType === 'SUCCESS') cls = 'ok';
+    else if (statusType === 'warn' || statusType === 'WARN') cls = 'warn';
+    else if (statusType === 'err' || statusType === 'ERROR') cls = 'err';
+    addLine(lineText, cls);
+
+    if (statusType === 'BATCH_DONE') {
+      clearActionButtons();
+      showFourLineMainMenu();
+    }
+  };
+
+  // ====================================================================
+  // CENTRAL USER INPUT HANDLER (FOR 1, 2, 3, 4 & NUMBERS)
+  // ====================================================================
+  function handleUserInput(rawVal) {
+    const val = String(rawVal || '').trim();
+
+    if (appState.mode === STATE.ASK_START_SCENE && val === '') {
+      applyStartSceneAndAskEnd(appState.minScene);
+      return;
+    }
+    if (appState.mode === STATE.ASK_END_SCENE && val === '') {
+      applyEndSceneAndShowStartButton(appState.maxScene);
+      return;
+    }
+
+    if (!val) return;
+    addLine('>> ' + val, 'cmd-echo');
+    cmdInput.value = '';
+
+    if (appState.mode === STATE.SELECT_BOT) {
+      if (val === '1') {
+        appState.selectedBot = 1;
+        showFourLineMainMenu();
+      } else if (val === '2') {
+        appState.selectedBot = 2;
+        showFourLineMainMenu();
+      } else {
+        addLine('Kripya 1 (CHATGPT) ya 2 (FLOW AI) likhein.', 'err');
+      }
+      return;
+    }
+
+    if (appState.mode === STATE.MAIN_MENU) {
+      if (val === '1') {
+        startAccountSetupOption();
+      } else if (val === '2') {
+        startPdfChooseOption();
+      } else if (val === '3') {
+        if (bridge && typeof bridge.resetAllAccountLimits === 'function') {
+          bridge.resetAllAccountLimits(appState.selectedBot);
+        }
+        addLine('✅ Sabhi accounts ki limits reset ho gyi hain!', 'ok');
+        showFourLineMainMenu();
+      } else if (val === '4') {
+        showBotSelectionPrompt(false);
+      } else {
+        addLine('Kripya 1, 2, 3 ya 4 likhein.', 'err');
+      }
+      return;
+    }
+
+    if (appState.mode === STATE.ASK_ACC_COUNT) {
+      const n = parseInt(val, 10);
+      if (isNaN(n) || n < 1 || n > 30) {
+        addLine('Kripya valid account number likhein (e.g. 3).', 'err');
+        return;
+      }
+      processAccountCountInput(n);
+      return;
+    }
+
+    if (appState.mode === STATE.ACC_SETUP_WAIT_NEXT) {
+      if (val.toLowerCase() === 'next' || val === '1') {
+        completeCurrentAccountSetupStep();
+      } else {
+        addLine('Account login karne ke baad Next button dabayein.', 'warn');
+      }
+      return;
+    }
+
+    if (appState.mode === STATE.SELECT_PDF) {
+      const cNo = parseInt(val, 10);
+      if (isNaN(cNo)) {
+        addLine('Kripya valid option number likhein.', 'err');
+        return;
+      }
+      processPdfSelectionInput(cNo);
+      return;
+    }
+
+    if (appState.mode === STATE.ASK_START_SCENE) {
+      if (val.toLowerCase() === 'next') {
+        applyStartSceneAndAskEnd(appState.minScene);
+        return;
+      }
+      const sNo = parseInt(val, 10);
+      applyStartSceneAndAskEnd(isNaN(sNo) || sNo < 1 ? appState.minScene : sNo);
+      return;
+    }
+
+    if (appState.mode === STATE.ASK_END_SCENE) {
+      if (val.toLowerCase() === 'next') {
+        applyEndSceneAndShowStartButton(appState.maxScene);
+        return;
+      }
+      const eNo = parseInt(val, 10);
+      applyEndSceneAndShowStartButton(isNaN(eNo) || eNo < appState.startScene ? appState.maxScene : eNo);
+      return;
+    }
+
+    if (appState.mode === STATE.READY_START_AUTO) {
+      triggerStartAutomationNow();
+    }
+  }
+
+  cmdForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleUserInput(cmdInput.value);
+  });
+
+  // ====================================================================
+  // TRANSITION FROM LANDING TO TERMINAL SCREEN (SHOWS 3 PAGES AT TOP!)
+  // ====================================================================
+  function switchToTerminalWorkspaceView() {
+    landingView.hidden = true;
+    workspaceView.hidden = false;
+    // Tell Native Android that Terminal Screen has opened -> show the 3 top pages (Home, Chatgpt, Flow ai)!
+    if (bridge && typeof bridge.notifyTerminalScreenOpened === 'function') {
+      bridge.notifyTerminalScreenOpened();
+    }
+    refreshFolderBadge();
+    showBotSelectionPrompt(true);
+  }
+
+  window.onNativeFolderSetupFinished = function (folderDisplay) {
+    appState.folderPath = folderDisplay || '/storage/emulated/0/Itihaskar_Bot';
+    switchToTerminalWorkspaceView();
+  };
+
+  function initSlideWidget() {
+    const el = document.getElementById('slideToOpenBtn');
+    if (!el) return;
+    el.innerHTML =
+      '<span class="sl-label">' + (el.dataset.label || 'Slide to Open') + '</span>' +
+      '<span class="sl-done">' + (el.dataset.done || 'Opening…') + '</span>' +
+      '<div class="sl-knob" role="button" tabindex="0" aria-label="Slide to open">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>' +
+      '</div>';
+
+    const knob = el.querySelector('.sl-knob');
+    const lbl = el.querySelector('.sl-label');
+    let dragging = false, startX = 0, curX = 0, max = 0;
+
+    function updatePos(x) {
+      curX = x;
+      knob.style.transform = 'translateX(' + x + 'px)';
+      lbl.style.opacity = String(Math.max(0, 1 - x / (max * 0.65 || 1)));
+    }
+
+    function finishSlide() {
+      el.classList.add('is-done');
+      updatePos(max);
+      setTimeout(() => {
+        if (bridge && typeof bridge.requestInitialFolderSetup === 'function') {
+          bridge.requestInitialFolderSetup();
+        } else {
+          switchToTerminalWorkspaceView();
+        }
+      }, 300);
+    }
+
+    el.addEventListener('pointerdown', (e) => {
+      max = Math.max(0, el.clientWidth - knob.offsetWidth - 14);
+      dragging = true;
+      startX = e.clientX - curX;
+      knob.classList.add('drag');
+      el.setPointerCapture(e.pointerId);
+    });
+
+    el.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const nx = Math.max(0, Math.min(max, e.clientX - startX));
+      updatePos(nx);
+    });
+
+    const endDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      knob.classList.remove('drag');
+      if (curX >= max * 0.78) {
+        finishSlide();
+      } else {
+        updatePos(0);
+      }
+    };
+
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
+    el.addEventListener('click', () => {
+      if (curX < 10) {
+        max = Math.max(0, el.clientWidth - knob.offsetWidth - 14);
+        finishSlide();
+      }
+    });
+  }
+
+  function initRocksCanvas() {
+    const cv = document.getElementById('rocks');
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    const DX = -0.78, DY = 0.62, cols = ['255,138,31', '255,61,0', '255,179,107'];
+    let W = 0, H = 0, rocks = [], last = 0;
+    const spawn = (init) => ({
+      r: 0.8 + Math.random() * 1.6, v: 0.06 + Math.random() * 0.11, len: 18 + Math.random() * 52,
+      c: cols[(Math.random() * 3) | 0], a: 0.45 + Math.random() * 0.5,
+      x: Math.random() * (W + H), y: init ? Math.random() * H : -30
+    });
+    function size() {
+      const d = Math.min(window.devicePixelRatio || 1, 2);
+      W = landingView.clientWidth || window.innerWidth;
+      H = landingView.clientHeight || window.innerHeight;
+      cv.width = W * d; cv.height = H * d;
+      ctx.setTransform(d, 0, 0, d, 0, 0);
+      const n = 22;
+      while (rocks.length < n) rocks.push(spawn(true));
+    }
+    function draw(dt) {
+      ctx.clearRect(0, 0, W, H);
+      for (const k of rocks) {
+        k.x += DX * k.v * dt; k.y += DY * k.v * dt;
+        if (k.y > H + 40 || k.x < -80) Object.assign(k, spawn(false));
+        const tx = k.x - DX * k.len, ty = k.y - DY * k.len;
+        const g = ctx.createLinearGradient(k.x, k.y, tx, ty);
+        g.addColorStop(0, 'rgba(' + k.c + ',' + k.a + ')');
+        g.addColorStop(1, 'rgba(' + k.c + ',0)');
+        ctx.strokeStyle = g; ctx.lineWidth = k.r; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(k.x, k.y); ctx.lineTo(tx, ty); ctx.stroke();
+      }
+    }
+    function loop(t) {
+      const dt = Math.min(50, t - last || 16); last = t;
+      if (!landingView.hidden) draw(dt);
+      requestAnimationFrame(loop);
+    }
+    size();
+    window.addEventListener('resize', size);
+    requestAnimationFrame(loop);
+  }
+
+  initSlideWidget();
+  initRocksCanvas();
+
+  const alreadyConfigured =
+    (bridge && typeof bridge.isFolderAlreadyConfigured === 'function')
+      ? bridge.isFolderAlreadyConfigured()
+      : (location.search.includes('mode=home'));
+
+  if (alreadyConfigured) {
+    switchToTerminalWorkspaceView();
+  }
+})();
+</script>
+</body>
+</html>
